@@ -3,6 +3,10 @@ package com.pcn.exoplanets.config;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 
 @Configuration
 public class OAuth2Config {
@@ -13,22 +17,20 @@ public class OAuth2Config {
     }
 
     @Bean
-    public String getGoogleClientId() {
-        return dotenv.get("GOOGLE_CLIENT_ID");
+    public ClientRegistrationRepository clientRegistrationRepository() {
+        return new InMemoryClientRegistrationRepository(googleClientRegistration());
     }
 
-    @Bean
-    public String getGoogleClientSecret() {
-        return dotenv.get("GOOGLE_CLIENT_SECRET");
-    }
-
-    @Bean
-    public String getGoogleRedirectUri() {
-        return dotenv.get("GOOGLE_REDIRECT_URI");
-    }
-
-    @Bean
-    public String getJwtSecret() {
-        return dotenv.get("JWT_SECRET");
+    private ClientRegistration googleClientRegistration() {
+        return ClientRegistration.withRegistrationId("google")
+                .clientId(dotenv.get("GOOGLE_CLIENT_ID"))
+                .clientSecret(dotenv.get("GOOGLE_CLIENT_SECRET"))
+                .scope("profile", "email")
+                .authorizationUri("https://accounts.google.com/o/oauth2/auth")
+                .tokenUri("https://oauth2.googleapis.com/token")
+                .userInfoUri("https://www.googleapis.com/oauth2/v3/userinfo")
+                .redirectUri("http://localhost:8080/login/oauth2/code/google")
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .build();
     }
 }
