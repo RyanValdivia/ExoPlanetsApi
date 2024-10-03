@@ -9,6 +9,9 @@ import com.pcn.exoplanets.auth.responses.AuthResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
@@ -21,7 +24,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
 
-    private static final String GOOGLE_TOKEN_INFO_URL = "https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=";
+    private static final String GOOGLE_TOKEN_INFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 
     public void registerUser (GoogleUser googleUser) {
         if (!userRepository.existsByEmail(googleUser.getEmail())) {
@@ -70,12 +73,14 @@ public class AuthService {
 
     private GoogleUser validateGoogleToken(String token) {
         RestTemplate restTemplate = new RestTemplate();
-        String url = GOOGLE_TOKEN_INFO_URL + token;
-        try {
-            ResponseEntity<GoogleUser> response = restTemplate.getForEntity(url, GoogleUser.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + token);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        ResponseEntity<GoogleUser> response = restTemplate.exchange(GOOGLE_TOKEN_INFO_URL, HttpMethod.GET, entity, GoogleUser.class);
+        if (response.getStatusCode().is2xxSuccessful()) {
             return response.getBody();
-        } catch (Exception e) {
-            throw new BadCredentialsException("Invalid Google Token");
+        } else {
+            throw new RuntimeException("Failed to fetch user info from Google");
         }
     }
 }

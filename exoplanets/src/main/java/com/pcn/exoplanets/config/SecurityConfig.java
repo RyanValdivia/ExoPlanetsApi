@@ -7,7 +7,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -22,7 +24,8 @@ public class SecurityConfig {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
-                        authRequest -> authRequest.requestMatchers("/", "/login/**", "/oauth2/**", "/auth/google/**")
+                        authRequest -> authRequest.requestMatchers("/", "/login/**", "/oauth2/**",
+                                        "/auth/google/register", "/auth/google/login")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated()
@@ -31,8 +34,14 @@ public class SecurityConfig {
 //                        auth -> auth.loginPage("/login")
 //                                .defaultSuccessUrl("/auth/google")
                 //)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
+    }
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().requestMatchers("/auth/google/register", "/auth/google/login");
     }
 }
